@@ -124,6 +124,41 @@
   .cat-btn .cat-desc { font-size: 11px; color: var(--muted); }
 
   .hidden { display: none; }
+
+  /* TTS toggle */
+  .tts-toggle { display: flex; align-items: center; gap: 7px; cursor: pointer; }
+  .tts-toggle input[type=checkbox] { display: none; }
+  .tgl-track { width: 30px; height: 17px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 9px; position: relative; transition: background 0.2s, border-color 0.2s; flex-shrink: 0; }
+  .tgl-track::after { content: ''; position: absolute; width: 11px; height: 11px; background: var(--muted); border-radius: 50%; top: 2px; left: 2px; transition: transform 0.2s, background 0.2s; }
+  .tts-toggle input:checked + .tgl-track { background: var(--accent-dim); border-color: rgba(212,168,90,0.4); }
+  .tts-toggle input:checked + .tgl-track::after { transform: translateX(13px); background: var(--accent); }
+  .tgl-label { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; white-space: nowrap; }
+
+  /* Speaker buttons */
+  .speak-btn { background: none; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; color: var(--muted); padding: 3px 8px; line-height: 1; transition: all 0.15s; display: inline-flex; align-items: center; gap: 4px; font-family: 'DM Mono', monospace; font-size: 11px; }
+  .speak-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Custom questions panel */
+  .custom-panel { margin-top: 1.25rem; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; text-align: left; }
+  .custom-panel-hdr { width: 100%; background: var(--surface); border: none; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 0.7rem 1rem; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+  .custom-panel-hdr:hover { background: var(--surface2); }
+  .cph-left { display: flex; align-items: center; gap: 8px; }
+  .cph-count { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent); background: var(--accent-dim); border: 1px solid rgba(212,168,90,0.2); padding: 1px 7px; border-radius: 10px; }
+  .cph-chevron { color: var(--muted); font-size: 12px; transition: transform 0.2s; }
+  .cph-chevron.open { transform: rotate(180deg); }
+  .custom-panel-body { padding: 1rem; border-top: 1px solid var(--border); background: var(--surface); }
+  .cpb-form { margin-bottom: 1rem; }
+  .cpb-form textarea { width: 100%; margin-bottom: 0.5rem; resize: vertical; min-height: 70px; }
+  .cpb-form-row { display: flex; gap: 8px; align-items: center; }
+  .cpb-form-row select { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 7px 10px; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 13px; outline: none; }
+  .cpb-form-row select:focus { border-color: var(--border2); }
+  .cq-item { display: flex; align-items: flex-start; gap: 8px; padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
+  .cq-item:last-child { border-bottom: none; }
+  .cq-cat { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--accent); background: var(--accent-dim); border: 1px solid rgba(212,168,90,0.2); padding: 2px 6px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; margin-top: 2px; }
+  .cq-text { font-size: 13px; color: var(--muted); flex: 1; line-height: 1.5; }
+  .cq-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 20px; line-height: 1; padding: 0 2px; flex-shrink: 0; }
+  .cq-del:hover { color: var(--red); }
+  .cq-empty { color: var(--muted); font-size: 13px; text-align: center; padding: 0.75rem 0; }
 </style>
 </head>
 <body>
@@ -161,16 +196,53 @@
         <span class="cat-name">Challenges</span>
         <span class="cat-desc">Difficult situations</span>
       </button>
+      <button class="cat-btn" id="cat-btn-custom" data-cat="custom" onclick="selectCat(this)">
+        <span class="cat-name">My Questions</span>
+        <span class="cat-desc" id="custom-cat-desc">0 saved</span>
+      </button>
     </div>
-    <button class="btn btn-primary" onclick="startSession()">Start session →</button>
+
+    <div class="custom-panel">
+      <button class="custom-panel-hdr" onclick="toggleCustomPanel()">
+        <span class="cph-left">My Questions <span class="cph-count" id="cph-count">0</span></span>
+        <span class="cph-chevron" id="cph-chevron">▾</span>
+      </button>
+      <div id="custom-panel-body" class="hidden">
+        <div class="custom-panel-body">
+          <div class="cpb-form">
+            <textarea id="custom-q-input" placeholder="Paste or type an interview question..." rows="3"></textarea>
+            <div class="cpb-form-row">
+              <select id="custom-q-cat">
+                <option value="mixed">Mixed / General</option>
+                <option value="competency">Competency</option>
+                <option value="motivation">Motivation</option>
+                <option value="technical">BA Craft</option>
+                <option value="culture">Culture Fit</option>
+                <option value="challenge">Challenge</option>
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="addCustomQuestion()">Add →</button>
+            </div>
+          </div>
+          <div id="custom-q-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:1.5rem">
+      <button class="btn btn-primary" onclick="startSession()">Start session →</button>
+    </div>
   </div>
 
   <div id="session-panel" class="hidden">
     <div class="session-bar">
-      <span>Session in progress</span>
+      <label class="tts-toggle" title="Auto-read questions and feedback aloud">
+        <input type="checkbox" id="tts-toggle" onchange="toggleAutoRead(this.checked)">
+        <span class="tgl-track"></span>
+        <span class="tgl-label">Read aloud</span>
+      </label>
       <span class="q-count" id="q-count">Question 1</span>
       <span class="avg" id="avg-display" style="display:none">
-        Avg score: <span class="stars-mini" id="avg-stars">—</span>
+        Avg: <span class="stars-mini" id="avg-stars">—</span>
       </span>
     </div>
 
@@ -314,6 +386,8 @@ QUESTION_BANK.mixed = [
   ...QUESTION_BANK.challenge.slice(0,2)
 ];
 
+let ttsAutoRead = localStorage.getItem('ttsAutoRead') === '1';
+
 let state = {
   category: 'mixed',
   questions: [],
@@ -322,7 +396,8 @@ let state = {
   questionCount: 0,
   scores: [],
   awaitingAnswer: false,
-  currentAttempts: []
+  currentAttempts: [],
+  currentFeedback: null
 };
 
 function selectCat(btn) {
@@ -332,9 +407,19 @@ function selectCat(btn) {
 }
 
 function startSession() {
+  const custom = loadCustomQuestions();
+  if (state.category === 'custom') {
+    if (custom.length === 0) { alert('No custom questions saved yet. Add some first.'); return; }
+    state.questions = custom.map(q => q.text);
+  } else if (state.category === 'mixed') {
+    state.questions = [...QUESTION_BANK.mixed, ...custom.map(q => q.text)];
+  } else {
+    const catCustom = custom.filter(q => q.category === state.category).map(q => q.text);
+    state.questions = [...QUESTION_BANK[state.category], ...catCustom];
+  }
   document.getElementById('start-panel').classList.add('hidden');
   document.getElementById('session-panel').classList.remove('hidden');
-  state.questions = [...QUESTION_BANK[state.category]];
+  document.getElementById('tts-toggle').checked = ttsAutoRead;
   shuffle(state.questions);
   askNextQuestion();
 }
@@ -359,7 +444,9 @@ function askNextQuestion() {
   document.getElementById('feedback-area').innerHTML = '';
   document.getElementById('next-row').classList.add('hidden');
   state.currentAttempts = [];
+  state.currentFeedback = null;
   renderQuestionInput('Type your answer, or hit the mic to speak...');
+  if (ttsAutoRead) speak(state.currentQuestion);
 }
 
 function renderQuestionInput(placeholder) {
@@ -379,6 +466,7 @@ function renderQuestionInput(placeholder) {
       <div class="q-meta">
         <span class="q-tag">${getCatLabel(state.category)}</span>
         <span class="q-num">Q${state.questionCount}</span>
+        <button class="speak-btn" onclick="speakCurrentQuestion()" title="Read question aloud">🔊 hear</button>
       </div>
       <div class="question-text">${state.currentQuestion}</div>
     </div>
@@ -483,7 +571,7 @@ function updateCharCount() {
 }
 
 function getCatLabel(cat) {
-  const labels = { mixed: 'Mixed', competency: 'Competency', motivation: 'Motivation', technical: 'BA Craft', culture: 'Culture Fit', challenge: 'Challenge' };
+  const labels = { mixed: 'Mixed', competency: 'Competency', motivation: 'Motivation', technical: 'BA Craft', culture: 'Culture Fit', challenge: 'Challenge', custom: 'My Questions' };
   return labels[cat] || cat;
 }
 
@@ -550,8 +638,13 @@ function renderFeedback(f, answer) {
   } else {
     state.scores[state.scores.length - 1] = score;
   }
+  state.currentFeedback = f;
   updateSessionBar();
   addToHistory(state.currentQuestion, score, attemptNum);
+
+  if (ttsAutoRead) {
+    speak(`Score: ${score} out of 10. ${f.verdict}. What worked: ${f.what_worked}. What was missing: ${f.what_missed}. How to improve: ${f.better_version}. Tip: ${f.tip}`);
+  }
 
   const attemptStripHtml = attemptNum > 1
     ? `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:0 1.5rem 0.75rem">
@@ -567,7 +660,10 @@ function renderFeedback(f, answer) {
     <div class="feedback-card">
       ${attemptStripHtml}
       <div class="feedback-header">
-        <span class="label">Feedback${attemptNum > 1 ? ` · Attempt ${attemptNum}` : ''}</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="label">Feedback${attemptNum > 1 ? ` · Attempt ${attemptNum}` : ''}</span>
+          <button class="speak-btn" onclick="speakFeedback()" title="Read feedback aloud">🔊 hear</button>
+        </div>
         <div class="score-display">
           <span class="score-num">${score}/10</span>
           <div class="score-bar"><div class="score-fill" style="width:${pct}%;background:${fillColor}"></div></div>
@@ -672,13 +768,109 @@ function showEndSummary() {
 }
 
 function resetSession() {
-  state = { category: state.category, questions: [], usedQuestions: [], currentQuestion: null, questionCount: 0, scores: [], awaitingAnswer: false, currentAttempts: [] };
+  stopSpeaking();
+  state = { category: state.category, questions: [], usedQuestions: [], currentQuestion: null, questionCount: 0, scores: [], awaitingAnswer: false, currentAttempts: [], currentFeedback: null };
   document.getElementById('session-panel').classList.add('hidden');
   document.getElementById('start-panel').classList.remove('hidden');
   document.getElementById('history-area').classList.add('hidden');
   document.getElementById('history-list').innerHTML = '';
   document.getElementById('avg-display').style.display = 'none';
 }
+
+// ── TTS ──────────────────────────────────────────────
+function speak(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.rate = 0.92;
+  utt.pitch = 1;
+  window.speechSynthesis.speak(utt);
+}
+
+function stopSpeaking() {
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+}
+
+function toggleAutoRead(checked) {
+  ttsAutoRead = checked;
+  localStorage.setItem('ttsAutoRead', checked ? '1' : '0');
+  if (!checked) stopSpeaking();
+}
+
+function speakCurrentQuestion() {
+  if (state.currentQuestion) speak(state.currentQuestion);
+}
+
+function speakFeedback() {
+  const f = state.currentFeedback;
+  if (!f) return;
+  speak(`Score: ${f.score} out of 10. ${f.verdict}. What worked: ${f.what_worked}. What was missing: ${f.what_missed}. How to improve: ${f.better_version}. Tip: ${f.tip}`);
+}
+
+// ── Custom questions ──────────────────────────────────
+function loadCustomQuestions() {
+  try { return JSON.parse(localStorage.getItem('customQuestions') || '[]'); }
+  catch(e) { return []; }
+}
+
+function saveCustomQuestions(qs) {
+  localStorage.setItem('customQuestions', JSON.stringify(qs));
+}
+
+function addCustomQuestion() {
+  const text = document.getElementById('custom-q-input').value.trim();
+  if (!text) return;
+  const category = document.getElementById('custom-q-cat').value;
+  const qs = loadCustomQuestions();
+  qs.push({ id: Date.now(), text, category });
+  saveCustomQuestions(qs);
+  document.getElementById('custom-q-input').value = '';
+  renderCustomQuestionList();
+  updateCustomCatBtn();
+}
+
+function deleteCustomQuestion(id) {
+  const qs = loadCustomQuestions().filter(q => q.id !== id);
+  saveCustomQuestions(qs);
+  renderCustomQuestionList();
+  updateCustomCatBtn();
+}
+
+function renderCustomQuestionList() {
+  const qs = loadCustomQuestions();
+  const list = document.getElementById('custom-q-list');
+  if (!list) return;
+  if (qs.length === 0) {
+    list.innerHTML = '<div class="cq-empty">No custom questions saved yet</div>';
+    return;
+  }
+  list.innerHTML = qs.map(q => `
+    <div class="cq-item">
+      <span class="cq-cat">${getCatLabel(q.category)}</span>
+      <span class="cq-text">${q.text}</span>
+      <button class="cq-del" onclick="deleteCustomQuestion(${q.id})" title="Delete">×</button>
+    </div>`).join('');
+}
+
+function updateCustomCatBtn() {
+  const count = loadCustomQuestions().length;
+  const countEl = document.getElementById('cph-count');
+  if (countEl) countEl.textContent = count;
+  const descEl = document.getElementById('custom-cat-desc');
+  if (descEl) descEl.textContent = `${count} saved`;
+}
+
+function toggleCustomPanel() {
+  const body = document.getElementById('custom-panel-body');
+  const chevron = document.getElementById('cph-chevron');
+  const open = !body.classList.contains('hidden');
+  body.classList.toggle('hidden', open);
+  if (chevron) chevron.classList.toggle('open', !open);
+}
+
+// ── Init ──────────────────────────────────────────────
+renderCustomQuestionList();
+updateCustomCatBtn();
 </script>
 </body>
 </html>
