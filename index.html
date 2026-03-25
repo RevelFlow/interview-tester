@@ -778,12 +778,30 @@ function resetSession() {
 }
 
 // ── TTS ──────────────────────────────────────────────
+function getBestVoice() {
+  const voices = window.speechSynthesis.getVoices();
+  const pick = [
+    v => /neural/i.test(v.name) && v.lang.startsWith('en'),
+    v => /microsoft.*natural/i.test(v.name) && v.lang.startsWith('en'),
+    v => v.name.includes('Microsoft') && v.lang === 'en-GB',
+    v => v.name.includes('Microsoft') && v.lang.startsWith('en'),
+    v => v.name.includes('Google') && v.lang === 'en-GB',
+    v => v.name.includes('Google') && v.lang.startsWith('en'),
+    v => v.lang === 'en-GB',
+    v => v.lang.startsWith('en'),
+  ];
+  for (const fn of pick) { const v = voices.find(fn); if (v) return v; }
+  return null;
+}
+
 function speak(text) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
   const utt = new SpeechSynthesisUtterance(text);
   utt.rate = 0.92;
   utt.pitch = 1;
+  const voice = getBestVoice();
+  if (voice) utt.voice = voice;
   window.speechSynthesis.speak(utt);
 }
 
