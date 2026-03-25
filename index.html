@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interview Coach — Herd Consulting</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0e0d;
+    --surface: #181714;
+    --surface2: #201e1b;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0ebe3;
+    --muted: #8a8378;
+    --accent: #d4a85a;
+    --accent-dim: rgba(212,168,90,0.12);
+    --green: #6dbf8a;
+    --green-dim: rgba(109,191,138,0.1);
+    --red: #e07070;
+    --red-dim: rgba(224,112,112,0.1);
+    --amber: #e8b84a;
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.6; }
+
+  .app { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem 4rem; min-height: 100vh; }
+
+  header { text-align: center; padding: 2.5rem 0 2rem; border-bottom: 1px solid var(--border); margin-bottom: 2rem; }
+  header .eyebrow { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem; }
+  header h1 { font-family: 'Instrument Serif', serif; font-size: 2rem; font-weight: 400; color: var(--text); letter-spacing: -0.01em; }
+  header h1 em { color: var(--accent); font-style: italic; }
+  header p { color: var(--muted); font-size: 13px; margin-top: 0.5rem; max-width: 460px; margin-left: auto; margin-right: auto; }
+
+  .session-bar { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 1.5rem; font-size: 13px; color: var(--muted); }
+  .session-bar .q-count { font-family: 'DM Mono', monospace; color: var(--accent); font-size: 12px; }
+  .session-bar .avg { display: flex; align-items: center; gap: 6px; }
+  .stars-mini { color: var(--accent); font-size: 12px; letter-spacing: 1px; }
+
+  .question-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.5rem; margin-bottom: 1.25rem; position: relative; overflow: hidden; }
+  .question-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), transparent); }
+  .q-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+  .q-tag { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; padding: 3px 8px; border-radius: 4px; background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(212,168,90,0.2); }
+  .q-num { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
+  .question-text { font-family: 'Instrument Serif', serif; font-size: 1.25rem; font-weight: 400; line-height: 1.5; color: var(--text); }
+
+  .answer-area { position: relative; margin-bottom: 1rem; }
+  textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.7; resize: vertical; min-height: 140px; outline: none; transition: border-color 0.2s; }
+  textarea:focus { border-color: var(--border2); }
+  textarea::placeholder { color: var(--muted); }
+  .char-count { text-align: right; font-size: 11px; color: var(--muted); margin-top: 4px; font-family: 'DM Mono', monospace; }
+
+  .mic-btn { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--border2); background: var(--surface2); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
+  .mic-btn:hover { border-color: var(--accent); background: var(--accent-dim); }
+  .mic-btn.recording { border-color: var(--red); background: var(--red-dim); animation: mic-pulse 1s infinite; }
+  .mic-btn svg { width: 18px; height: 18px; }
+  .mic-btn.recording svg { stroke: var(--red); }
+  .mic-btn:not(.recording) svg { stroke: var(--muted); }
+  @keyframes mic-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(224,112,112,0.3); } 50% { box-shadow: 0 0 0 6px rgba(224,112,112,0); } }
+  .voice-status { font-size: 12px; font-family: 'DM Mono', monospace; color: var(--muted); margin-left: 4px; }
+  .voice-status.active { color: var(--red); }
+  .input-row { display: flex; align-items: flex-start; gap: 10px; }
+  .input-row textarea { flex: 1; }
+
+  .btn-row { display: flex; gap: 10px; align-items: center; }
+  .btn { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; transition: all 0.15s; }
+  .btn-primary { background: var(--accent); color: #1a1510; }
+  .btn-primary:hover { background: #e0b96a; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--border2); color: var(--text); }
+  .btn-sm { padding: 7px 14px; font-size: 13px; }
+
+  .thinking { display: flex; align-items: center; gap: 10px; padding: 1rem; color: var(--muted); font-size: 13px; }
+  .dots span { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s infinite; margin: 0 2px; }
+  .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse { 0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
+
+  .feedback-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-bottom: 1.25rem; }
+  .feedback-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .feedback-header .label { font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+  .score-display { display: flex; align-items: center; gap: 10px; }
+  .score-num { font-family: 'Instrument Serif', serif; font-size: 1.6rem; color: var(--text); }
+  .score-bar { width: 80px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+  .stars { font-size: 14px; letter-spacing: 2px; }
+
+  .feedback-body { padding: 1.25rem 1.5rem; }
+  .feedback-section { margin-bottom: 1.25rem; }
+  .feedback-section:last-child { margin-bottom: 0; }
+  .fs-label { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+  .fs-label.good { color: var(--green); }
+  .fs-label.improve { color: var(--red); }
+  .fs-label.suggest { color: var(--accent); }
+  .fs-content { font-size: 13.5px; color: #c8c0b4; line-height: 1.7; }
+  .fs-content ul { padding-left: 1.2rem; }
+  .fs-content ul li { margin-bottom: 0.3rem; }
+
+  .verdict { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+  .verdict.strong { background: var(--green-dim); color: var(--green); border: 1px solid rgba(109,191,138,0.2); }
+  .verdict.good { background: rgba(109,191,138,0.07); color: #8ecba6; border: 1px solid rgba(109,191,138,0.15); }
+  .verdict.fair { background: rgba(232,184,74,0.08); color: var(--amber); border: 1px solid rgba(232,184,74,0.2); }
+  .verdict.weak { background: var(--red-dim); color: var(--red); border: 1px solid rgba(224,112,112,0.2); }
+
+  .next-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .history { margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
+  .history-title { font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 1rem; }
+  .history-item { display: flex; align-items: flex-start; gap: 12px; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+  .history-item:last-child { border-bottom: none; }
+  .hi-q { font-size: 13px; color: var(--muted); flex: 1; line-height: 1.5; }
+  .hi-score { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--accent); flex-shrink: 0; }
+
+  .start-panel { text-align: center; padding: 2.5rem 1rem; }
+  .start-panel p { color: var(--muted); font-size: 14px; max-width: 400px; margin: 0 auto 1.5rem; line-height: 1.7; }
+  .category-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+  .cat-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem 1rem; cursor: pointer; text-align: left; transition: all 0.15s; color: var(--text); font-family: 'DM Sans', sans-serif; }
+  .cat-btn:hover { border-color: var(--border2); background: var(--surface2); }
+  .cat-btn.selected { border-color: var(--accent); background: var(--accent-dim); }
+  .cat-btn .cat-name { font-size: 13px; font-weight: 500; display: block; margin-bottom: 2px; }
+  .cat-btn .cat-desc { font-size: 11px; color: var(--muted); }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="eyebrow">Herd Consulting · Interview Prep</div>
+    <h1>Interview <em>Coach</em></h1>
+    <p>Practise answering questions using your real experience. Honest feedback, every time.</p>
+  </header>
+
+  <div id="start-panel" class="start-panel">
+    <p>Choose a focus area or go with a random mix. Questions are drawn from your actual CV and work examples.</p>
+    <div class="category-grid">
+      <button class="cat-btn selected" data-cat="mixed" onclick="selectCat(this)">
+        <span class="cat-name">Mixed bag</span>
+        <span class="cat-desc">Random selection</span>
+      </button>
+      <button class="cat-btn" data-cat="competency" onclick="selectCat(this)">
+        <span class="cat-name">Competency</span>
+        <span class="cat-desc">STAR-format examples</span>
+      </button>
+      <button class="cat-btn" data-cat="motivation" onclick="selectCat(this)">
+        <span class="cat-name">Motivation</span>
+        <span class="cat-desc">Why Herd, why now</span>
+      </button>
+      <button class="cat-btn" data-cat="technical" onclick="selectCat(this)">
+        <span class="cat-name">BA craft</span>
+        <span class="cat-desc">Process, methods, tools</span>
+      </button>
+      <button class="cat-btn" data-cat="culture" onclick="selectCat(this)">
+        <span class="cat-name">Culture fit</span>
+        <span class="cat-desc">Values, startup, team</span>
+      </button>
+      <button class="cat-btn" data-cat="challenge" onclick="selectCat(this)">
+        <span class="cat-name">Challenges</span>
+        <span class="cat-desc">Difficult situations</span>
+      </button>
+    </div>
+    <button class="btn btn-primary" onclick="startSession()">Start session →</button>
+  </div>
+
+  <div id="session-panel" class="hidden">
+    <div class="session-bar">
+      <span>Session in progress</span>
+      <span class="q-count" id="q-count">Question 1</span>
+      <span class="avg" id="avg-display" style="display:none">
+        Avg score: <span class="stars-mini" id="avg-stars">—</span>
+      </span>
+    </div>
+
+    <div id="question-area"></div>
+    <div id="feedback-area"></div>
+    <div id="next-row" class="next-row hidden">
+      <button class="btn btn-primary" onclick="nextQuestion()">Next question →</button>
+      <button class="btn btn-ghost btn-sm" onclick="endSession()">End session</button>
+    </div>
+    <div id="history-area" class="hidden history">
+      <div class="history-title">This session</div>
+      <div id="history-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CONTEXT = `You are an interview coach helping Benjy Curzon-Jones prepare for an interview at Herd Consulting for a Consultant Business Analyst role.
+
+ABOUT BENJY:
+- BA with ~10 years experience across higher education (Sheffield Hallam University), telecoms (Plusnet/BT), automotive retail (Lithia UK), manufacturing (Synseal)
+- Current role: Transformation Analyst at Lithia UK (2025-present) - built efficiency models from live dealership data identifying 1M hours repurposable capacity = £50M gross profit opportunity, tracked £25M+ benefits portfolio, influenced UK and US senior leadership securing £2M+ investment
+- Sheffield Hallam University (2021-2025): Led CRM implementation (Microsoft Dynamics 365) for student recruitment. Key work:
+  * Functional Module framework (blend of SIPOC + process maps) for requirements workshops with no prior documentation
+  * Event booking forms with 300+ sessions, validation logic, travel time logic
+  * QR code scanning PowerApp for event check-in
+  * Offer comms solution (STA/SCO/TEX) using 3 custom fields as conditional triggers
+  * Full artefact suite: process maps, user stories, data models, integration maps, test plans
+  * UAT lead: test scripts, defect management, 70 staff users
+  * SITS to D365 integration mapping (full data dictionary, 2-week initial transfer)
+  * De-duplication study (root cause analysis, 20% time saving for 2 employees)
+  * Unique email address options report (removed ~700 new dupes/month)
+  * Event Forms wireframes built in Miro when UI designer stalled for months
+  * Options report for forms rebuild (PHP vs .NET, ~£300k decision) - Benjy's suggestion overruled, accepted gracefully
+  * Benefits case for CRM enhancements, presented to senior staff
+  * Subject Area OLP Split - coordinated cross-system switchover
+  * General Supplier Engagement plan - adopted by DTS team
+  * JIRA ticket creation guidelines - standardised across digital team
+  * Data integration mapping for reporting (CRM to data warehouse via staging DB)
+  * COVID data project requirements
+  * AWRC Active Together programme - additional process mapping work done alongside full-time CRM role
+  * Sitecore Forms - front-end to backend mapping
+- Plusnet/BT (2018-2021): £25M+ transformation programme, customer journey mapping, VMOST alignment, Data Insights Champion
+- Synseal (2016-2018): Lean/Six Sigma Green Belt, stepped in to cover logistics planning at short notice for 3 months, £120k board-secured investment from zero-base stillage model, £150k savings, £200k overnight glass shunt savings
+- Education: PhD Sports & Exercise Science (Birmingham, funded by Age UK), BSc 2:1, BCS Foundation Certificate in Business Analysis, Lean Six Sigma Green Belt
+- Lives in Sheffield, keen mountain biker, cave camper, runner, climber, singer-songwriter, forager, runs Revel Threads (festival clothing business)
+
+ABOUT HERD:
+- Consultancy focused on social mission clients: Police, Government, Local Authorities, Higher Education, Charities
+- Grew from ~10 to 40+ people in ~1 year, mainly BAs and Product Owners
+- Named Sunday Times Best Places to Work 2024 and 2025
+- Based in Sheffield, hybrid working
+- "Power of Herd" team culture, "non-consultancy vibes"
+- Salary £42k-£52k
+- JD emphasises: outcomes over process, long-term client relationships, pragmatic delivery, all-rounder who gets stuck in, able to challenge clients constructively, commercially aware, lifelong learner
+
+YOUR ROLE: Ask ONE interview question, then when Benjy answers, give honest, direct feedback.
+
+When giving feedback, structure it as JSON with these exact fields:
+{
+  "score": <integer 1-10>,
+  "verdict": "<one of: Strong, Good, Fair, Weak>",
+  "what_worked": "<2-3 sentences on genuine strengths of the answer>",
+  "what_missed": "<specific things that were absent, vague, or weak - be direct, don't sugarcoat>",
+  "better_version": "<a concrete suggestion: either a specific example Benjy should have used, or 2-3 sentences showing how to improve the structure/content>",
+  "tip": "<one sharp, memorable tactical tip>"
+}
+
+Be genuinely critical. A score of 7+ should be earned. If the answer is vague, call it out. If they didn't use a real example when they should have, say so. If the STAR structure broke down, point to where. Don't pad with positivity. Benjy wants to improve, not feel good.`;
+
+const QUESTION_BANK = {
+  competency: [
+    "Tell me about a time you had to get under the skin of a complex operational problem that nobody had properly documented before.",
+    "Give me an example of a piece of analysis work you're most proud of and why.",
+    "Tell me about a time you had to influence a decision-maker who was resistant or sceptical.",
+    "Describe a situation where you had to take ownership of something outside your normal remit.",
+    "Give me an example of when you had to adapt your approach because the original plan wasn't working.",
+    "Tell me about a time you disagreed with a decision that was made. How did you handle it?",
+    "Describe a time you had to manage multiple competing priorities or workstreams at once.",
+    "Give me an example of work you delivered that you think genuinely made things better for real people.",
+    "Tell me about a time you built a tool, framework, or process that others ended up using.",
+    "Describe a time when you had to deliver to a tight deadline under significant pressure."
+  ],
+  motivation: [
+    "Why do you want to leave your current role?",
+    "Why Herd specifically, rather than another consultancy?",
+    "You've worked in-house your whole career. Why make the move to consulting now?",
+    "What is it about the social mission sectors — government, education, charities — that appeals to you?",
+    "Where do you see yourself in three years?",
+    "What does a great day at work look like for you?",
+    "What are you hoping Herd can offer you that your current role can't?"
+  ],
+  technical: [
+    "Walk me through how you approach a brand new piece of BA work when there's no existing documentation.",
+    "How do you decide which BA techniques to use for a given piece of work?",
+    "What does good requirements documentation look like to you?",
+    "How do you manage stakeholders who have conflicting requirements?",
+    "Tell me about your experience with Agile delivery — how do you work within sprint cycles as a BA?",
+    "How do you approach UAT — what makes a good test plan?",
+    "Talk me through your experience with data analysis and how you've used it in your BA work.",
+    "What's your approach to facilitated workshops? How do you prepare and how do you handle them going off-track?",
+    "How do you make sure your work is understood and used by non-technical people?"
+  ],
+  culture: [
+    "What do you think working for a start-up or scale-up is actually like, based on your experience or expectations?",
+    "We talk about the 'Power of Herd' — the idea that the team is greater than the sum of its parts. What does working collaboratively actually mean to you in practice?",
+    "How do you handle being challenged on your approach or recommendations by a client?",
+    "We want people who'll get stuck in where needed, even outside their defined role. Can you give me an example of when you've done that?",
+    "What does lifelong learning look like for you — how do you actually develop your skills?",
+    "How do you stay motivated when you're working on something difficult, ambiguous, or slow-moving?"
+  ],
+  challenge: [
+    "Tell me about a time a project or piece of work went wrong. What happened and what did you do?",
+    "Describe a time you had to challenge a client or senior stakeholder on how they were approaching something.",
+    "Tell me about a time you were given an unclear or impossible brief. How did you handle it?",
+    "Describe a time you made a mistake on a piece of analytical work. How did you catch it and what did you do?",
+    "Tell me about the most difficult stakeholder relationship you've had to manage."
+  ],
+  mixed: []
+};
+
+// Populate mixed
+QUESTION_BANK.mixed = [
+  ...QUESTION_BANK.competency.slice(0,3),
+  ...QUESTION_BANK.motivation.slice(0,2),
+  ...QUESTION_BANK.technical.slice(0,2),
+  ...QUESTION_BANK.culture.slice(0,2),
+  ...QUESTION_BANK.challenge.slice(0,2)
+];
+
+let state = {
+  category: 'mixed',
+  questions: [],
+  usedQuestions: [],
+  currentQuestion: null,
+  questionCount: 0,
+  scores: [],
+  awaitingAnswer: false
+};
+
+function selectCat(btn) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  state.category = btn.dataset.cat;
+}
+
+function startSession() {
+  document.getElementById('start-panel').classList.add('hidden');
+  document.getElementById('session-panel').classList.remove('hidden');
+  state.questions = [...QUESTION_BANK[state.category]];
+  shuffle(state.questions);
+  askNextQuestion();
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+function askNextQuestion() {
+  if (state.questions.length === 0) {
+    showEndSummary();
+    return;
+  }
+  state.currentQuestion = state.questions.pop();
+  state.questionCount++;
+  state.awaitingAnswer = true;
+
+  document.getElementById('q-count').textContent = `Question ${state.questionCount}`;
+  document.getElementById('feedback-area').innerHTML = '';
+  document.getElementById('next-row').classList.add('hidden');
+
+  const qArea = document.getElementById('question-area');
+  qArea.innerHTML = `
+    <div class="question-card">
+      <div class="q-meta">
+        <span class="q-tag">${getCatLabel(state.category)}</span>
+        <span class="q-num">Q${state.questionCount}</span>
+      </div>
+      <div class="question-text">${state.currentQuestion}</div>
+    </div>
+    <div class="answer-area">
+      <div class="input-row">
+        <textarea id="answer-input" placeholder="Type your answer, or hit the mic to speak..." rows="7" oninput="updateCharCount()"></textarea>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:4px">
+          <button class="mic-btn" id="mic-btn" onclick="toggleRecording()" title="Click to speak your answer">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="2" width="6" height="12" rx="3"/>
+              <path d="M5 10a7 7 0 0 0 14 0"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+              <line x1="9" y1="22" x2="15" y2="22"/>
+            </svg>
+          </button>
+          <span class="voice-status" id="voice-status">mic</span>
+        </div>
+      </div>
+      <div class="char-count"><span id="char-count">0</span> words</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="submitAnswer()" id="submit-btn">Submit answer →</button>
+      <button class="btn btn-ghost btn-sm" onclick="skipQuestion()">Skip this question</button>
+    </div>
+  `;
+  document.getElementById('answer-input').focus();
+}
+
+let recognition = null;
+let isRecording = false;
+
+function toggleRecording() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    const status = document.getElementById('voice-status');
+    if (status) { status.textContent = 'not supported'; status.style.color = 'var(--red)'; }
+    return;
+  }
+  if (isRecording) {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+}
+
+function startRecording() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-GB';
+
+  const btn = document.getElementById('mic-btn');
+  const status = document.getElementById('voice-status');
+  const textarea = document.getElementById('answer-input');
+  let existingText = textarea.value;
+  if (existingText && !existingText.endsWith(' ')) existingText += ' ';
+
+  recognition.onstart = () => {
+    isRecording = true;
+    btn.classList.add('recording');
+    status.textContent = 'listening...';
+    status.classList.add('active');
+  };
+
+  recognition.onresult = (e) => {
+    let interim = '';
+    let final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
+      else interim += e.results[i][0].transcript;
+    }
+    if (final) existingText += final;
+    textarea.value = existingText + interim;
+    updateCharCount();
+  };
+
+  recognition.onerror = (e) => {
+    stopRecording();
+    if (status) { status.textContent = e.error === 'not-allowed' ? 'no access' : 'error'; }
+  };
+
+  recognition.onend = () => {
+    if (isRecording) recognition.start();
+  };
+
+  recognition.start();
+}
+
+function stopRecording() {
+  isRecording = false;
+  if (recognition) { recognition.onend = null; recognition.stop(); recognition = null; }
+  const btn = document.getElementById('mic-btn');
+  const status = document.getElementById('voice-status');
+  if (btn) btn.classList.remove('recording');
+  if (status) { status.textContent = 'mic'; status.classList.remove('active'); }
+}
+
+function updateCharCount() {
+  const words = document.getElementById('answer-input').value.trim().split(/\s+/).filter(w => w).length;
+  document.getElementById('char-count').textContent = words;
+}
+
+function getCatLabel(cat) {
+  const labels = { mixed: 'Mixed', competency: 'Competency', motivation: 'Motivation', technical: 'BA Craft', culture: 'Culture Fit', challenge: 'Challenge' };
+  return labels[cat] || cat;
+}
+
+async function submitAnswer() {
+  stopRecording();
+  const answer = document.getElementById('answer-input').value.trim();
+  if (!answer || answer.length < 20) {
+    document.getElementById('answer-input').style.borderColor = 'var(--red)';
+    setTimeout(() => document.getElementById('answer-input').style.borderColor = '', 1500);
+    return;
+  }
+
+  document.getElementById('submit-btn').disabled = true;
+  document.getElementById('feedback-area').innerHTML = `
+    <div class="thinking">
+      <div class="dots"><span></span><span></span><span></span></div>
+      Assessing your answer...
+    </div>`;
+
+  const prompt = `The interview question was: "${state.currentQuestion}"
+
+Benjy's answer: "${answer}"
+
+Now provide your feedback as a JSON object only — no other text, no markdown fences.`;
+
+  try {
+    const res = await fetch('/.netlify/functions/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: CONTEXT,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content.map(b => b.text || '').join('');
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const feedback = JSON.parse(clean);
+    renderFeedback(feedback, answer);
+  } catch(e) {
+    document.getElementById('feedback-area').innerHTML = `<div class="thinking" style="color:var(--red)">Error getting feedback. Please try again.</div>`;
+    document.getElementById('submit-btn').disabled = false;
+  }
+}
+
+function renderFeedback(f, answer) {
+  const score = Math.min(10, Math.max(1, f.score));
+  const stars = '★'.repeat(Math.round(score/2)) + '☆'.repeat(5 - Math.round(score/2));
+  const pct = (score / 10) * 100;
+  const fillColor = score >= 8 ? 'var(--green)' : score >= 6 ? 'var(--accent)' : score >= 4 ? 'var(--amber)' : 'var(--red)';
+  const verdictClass = {Strong:'strong', Good:'good', Fair:'fair', Weak:'weak'}[f.verdict] || 'fair';
+
+  state.scores.push(score);
+  state.usedQuestions.push({ q: state.currentQuestion, score });
+  updateSessionBar();
+  addToHistory(state.currentQuestion, score);
+
+  document.getElementById('feedback-area').innerHTML = `
+    <div class="feedback-card">
+      <div class="feedback-header">
+        <span class="label">Feedback</span>
+        <div class="score-display">
+          <span class="score-num">${score}/10</span>
+          <div class="score-bar"><div class="score-fill" style="width:${pct}%;background:${fillColor}"></div></div>
+          <span class="verdict ${verdictClass}">${f.verdict}</span>
+        </div>
+      </div>
+      <div class="feedback-body">
+        <div class="feedback-section">
+          <div class="fs-label good">✓ What worked</div>
+          <div class="fs-content">${f.what_worked}</div>
+        </div>
+        <div class="feedback-section">
+          <div class="fs-label improve">✗ What was missing or weak</div>
+          <div class="fs-content">${f.what_missed}</div>
+        </div>
+        <div class="feedback-section">
+          <div class="fs-label suggest">→ How to improve it</div>
+          <div class="fs-content">${f.better_version}</div>
+        </div>
+        <div class="feedback-section">
+          <div class="fs-label" style="color:var(--muted)">⚡ Sharp tip</div>
+          <div class="fs-content" style="font-style:italic;color:var(--muted)">${f.tip}</div>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('next-row').classList.remove('hidden');
+  document.getElementById('next-row').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function updateSessionBar() {
+  if (state.scores.length === 0) return;
+  const avg = state.scores.reduce((a,b) => a+b, 0) / state.scores.length;
+  const stars = '★'.repeat(Math.round(avg/2)) + '☆'.repeat(5 - Math.round(avg/2));
+  const avgEl = document.getElementById('avg-display');
+  avgEl.style.display = 'flex';
+  document.getElementById('avg-stars').textContent = stars + ' ' + avg.toFixed(1);
+}
+
+function addToHistory(q, score) {
+  document.getElementById('history-area').classList.remove('hidden');
+  const list = document.getElementById('history-list');
+  const item = document.createElement('div');
+  item.className = 'history-item';
+  const short = q.length > 80 ? q.slice(0, 77) + '...' : q;
+  item.innerHTML = `<div class="hi-q">${short}</div><div class="hi-score">${score}/10</div>`;
+  list.appendChild(item);
+}
+
+function nextQuestion() {
+  askNextQuestion();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function skipQuestion() {
+  stopRecording();
+  state.questionCount--;
+  askNextQuestion();
+}
+
+function endSession() {
+  if (state.scores.length === 0) {
+    document.getElementById('session-panel').classList.add('hidden');
+    document.getElementById('start-panel').classList.remove('hidden');
+    return;
+  }
+  showEndSummary();
+}
+
+function showEndSummary() {
+  const avg = state.scores.reduce((a,b) => a+b, 0) / state.scores.length;
+  document.getElementById('question-area').innerHTML = `
+    <div class="question-card" style="text-align:center;padding:2rem">
+      <div class="q-meta" style="justify-content:center;margin-bottom:1rem">
+        <span class="q-tag">Session complete</span>
+      </div>
+      <div class="question-text" style="font-size:1rem;color:var(--muted)">
+        ${state.scores.length} question${state.scores.length !== 1 ? 's' : ''} answered · Average score: <strong style="color:var(--accent)">${avg.toFixed(1)}/10</strong>
+      </div>
+      <div style="margin-top:1.5rem">
+        <button class="btn btn-primary" onclick="resetSession()">Start new session →</button>
+      </div>
+    </div>`;
+  document.getElementById('feedback-area').innerHTML = '';
+  document.getElementById('next-row').classList.add('hidden');
+}
+
+function resetSession() {
+  state = { category: state.category, questions: [], usedQuestions: [], currentQuestion: null, questionCount: 0, scores: [], awaitingAnswer: false };
+  document.getElementById('session-panel').classList.add('hidden');
+  document.getElementById('start-panel').classList.remove('hidden');
+  document.getElementById('history-area').classList.add('hidden');
+  document.getElementById('history-list').innerHTML = '';
+  document.getElementById('avg-display').style.display = 'none';
+}
+</script>
+</body>
+</html>
