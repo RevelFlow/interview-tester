@@ -782,34 +782,42 @@ function resetSession() {
 }
 
 // ── TTS ──────────────────────────────────────────────
-let currentAudio = null;
+function getBestVoice() {
+  const voices = window.speechSynthesis.getVoices();
+  const pick = [
+    v => /neural/i.test(v.name) && v.lang.startsWith('en'),
+    v => /microsoft.*natural/i.test(v.name) && v.lang.startsWith('en'),
+    v => v.name.includes('Microsoft') && v.lang === 'en-GB',
+    v => v.name.includes('Microsoft') && v.lang.startsWith('en'),
+    v => v.name.includes('Google') && v.lang === 'en-GB',
+    v => v.name.includes('Google') && v.lang.startsWith('en'),
+    v => v.lang === 'en-GB',
+    v => v.lang.startsWith('en'),
+  ];
+  for (const fn of pick) { const v = voices.find(fn); if (v) return v; }
+  return null;
+}
 
-async function speak(text) {
-  if (!text) return;
-  stopSpeaking();
-  try {
-    const res = await fetch('/.netlify/functions/tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
-    });
-    if (!res.ok) throw new Error('TTS failed');
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    currentAudio = new Audio(url);
-    currentAudio.play();
-    currentAudio.onended = () => { URL.revokeObjectURL(url); currentAudio = null; };
-  } catch(e) {
-    // fallback to browser TTS
-    if (!window.speechSynthesis) return;
-    const utt = new SpeechSynthesisUtterance(text);
-    utt.rate = 0.92;
+function speak(text) {
+  if (!text || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.rate = 0.92;
+  utt.pitch = 1;
+  // Voices load async — wait if needed
+  const trySpeak = () => {
+    const voice = getBestVoice();
+    if (voice) utt.voice = voice;
     window.speechSynthesis.speak(utt);
+  };
+  if (window.speechSynthesis.getVoices().length) {
+    trySpeak();
+  } else {
+    window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.onvoiceschanged = null; trySpeak(); };
   }
 }
 
 function stopSpeaking() {
-  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
   if (window.speechSynthesis) window.speechSynthesis.cancel();
 }
 
