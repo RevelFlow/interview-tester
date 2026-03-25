@@ -485,19 +485,22 @@ Now provide your feedback as a JSON object only — no other text, no markdown f
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-opus-4-5',
         max_tokens: 1000,
         system: CONTEXT,
         messages: [{ role: 'user', content: prompt }]
       })
     });
     const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error?.message || JSON.stringify(data));
+    }
     const raw = data.content.map(b => b.text || '').join('');
     const clean = raw.replace(/```json|```/g, '').trim();
     const feedback = JSON.parse(clean);
     renderFeedback(feedback, answer);
   } catch(e) {
-    document.getElementById('feedback-area').innerHTML = `<div class="thinking" style="color:var(--red)">Error getting feedback. Please try again.</div>`;
+    document.getElementById('feedback-area').innerHTML = `<div class="thinking" style="color:var(--red)">Error: ${e.message}</div>`;
     document.getElementById('submit-btn').disabled = false;
   }
 }
