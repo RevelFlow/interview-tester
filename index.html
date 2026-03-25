@@ -188,6 +188,18 @@
 </div>
 
 <script>
+(function() {
+  const stored = sessionStorage.getItem('auth');
+  if (stored !== 'ok') {
+    const pw = prompt('Enter password:');
+    if (pw !== 'herd2026') {
+      document.body.innerHTML = '<p style="color:#f0ebe3;font-family:sans-serif;padding:2rem">Incorrect password.</p>';
+      throw new Error('Unauthorised');
+    }
+    sessionStorage.setItem('auth', 'ok');
+  }
+})();
+
 const CONTEXT = `You are an interview coach helping Benjy Curzon-Jones prepare for an interview at Herd Consulting for a Consultant Business Analyst role.
 
 ABOUT BENJY:
