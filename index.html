@@ -324,7 +324,11 @@ When giving feedback, structure it as JSON with these exact fields:
   "tip": "<one sharp, memorable tactical tip>"
 }
 
-Be genuinely critical. A score of 7+ should be earned. If the answer is vague, call it out. If they didn't use a real example when they should have, say so. If the STAR structure broke down, point to where. Don't pad with positivity. Benjy wants to improve, not feel good.`;
+IMPORTANT CONTEXT: This is an INFORMAL first interview — more of a conversation than a formal panel. Herd's culture is relaxed and human. Answers do not need rigid STAR structure; what matters is that the content is clear, grounded in real experience, and shows genuine self-awareness. Conversational, natural answers are fine — even preferable. Do NOT penalise for informal tone or loose structure unless it genuinely undermines the answer.
+
+Also: Benjy may be using voice-to-text to dictate answers. Ignore any missing punctuation or transcription artefacts — judge the substance only.
+
+Be genuinely critical on content. A score of 7+ should be earned. If the answer is vague or lacks a real example when one is needed, call it out. Don't pad with positivity. Benjy wants to improve, not feel good.`;
 
 const QUESTION_BANK = {
   competency: [
@@ -602,7 +606,7 @@ Now provide your feedback as a JSON object only — no other text, no markdown f
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1000,
         system: CONTEXT,
         messages: [{ role: 'user', content: prompt }]
@@ -778,34 +782,34 @@ function resetSession() {
 }
 
 // ── TTS ──────────────────────────────────────────────
-function getBestVoice() {
-  const voices = window.speechSynthesis.getVoices();
-  const pick = [
-    v => /neural/i.test(v.name) && v.lang.startsWith('en'),
-    v => /microsoft.*natural/i.test(v.name) && v.lang.startsWith('en'),
-    v => v.name.includes('Microsoft') && v.lang === 'en-GB',
-    v => v.name.includes('Microsoft') && v.lang.startsWith('en'),
-    v => v.name.includes('Google') && v.lang === 'en-GB',
-    v => v.name.includes('Google') && v.lang.startsWith('en'),
-    v => v.lang === 'en-GB',
-    v => v.lang.startsWith('en'),
-  ];
-  for (const fn of pick) { const v = voices.find(fn); if (v) return v; }
-  return null;
-}
+let currentAudio = null;
 
-function speak(text) {
-  if (!window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  const utt = new SpeechSynthesisUtterance(text);
-  utt.rate = 0.92;
-  utt.pitch = 1;
-  const voice = getBestVoice();
-  if (voice) utt.voice = voice;
-  window.speechSynthesis.speak(utt);
+async function speak(text) {
+  if (!text) return;
+  stopSpeaking();
+  try {
+    const res = await fetch('/.netlify/functions/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) throw new Error('TTS failed');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    currentAudio = new Audio(url);
+    currentAudio.play();
+    currentAudio.onended = () => { URL.revokeObjectURL(url); currentAudio = null; };
+  } catch(e) {
+    // fallback to browser TTS
+    if (!window.speechSynthesis) return;
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.rate = 0.92;
+    window.speechSynthesis.speak(utt);
+  }
 }
 
 function stopSpeaking() {
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
   if (window.speechSynthesis) window.speechSynthesis.cancel();
 }
 
