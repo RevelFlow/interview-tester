@@ -178,6 +178,7 @@
     <div id="feedback-area"></div>
     <div id="next-row" class="next-row hidden">
       <button class="btn btn-primary" onclick="nextQuestion()">Next question →</button>
+      <button class="btn btn-ghost btn-sm" onclick="retryQuestion()">Try again ↩</button>
       <button class="btn btn-ghost btn-sm" onclick="endSession()">End session</button>
     </div>
     <div id="history-area" class="hidden history">
@@ -320,7 +321,8 @@ let state = {
   currentQuestion: null,
   questionCount: 0,
   scores: [],
-  awaitingAnswer: false
+  awaitingAnswer: false,
+  currentAttempts: []
 };
 
 function selectCat(btn) {
@@ -356,6 +358,20 @@ function askNextQuestion() {
   document.getElementById('q-count').textContent = `Question ${state.questionCount}`;
   document.getElementById('feedback-area').innerHTML = '';
   document.getElementById('next-row').classList.add('hidden');
+  state.currentAttempts = [];
+  renderQuestionInput('Type your answer, or hit the mic to speak...');
+}
+
+function renderQuestionInput(placeholder) {
+  const attemptsHtml = state.currentAttempts.length > 0
+    ? `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:0.25rem 0 0.75rem">
+        ${state.currentAttempts.map((a, i) => {
+          const c = a.score >= 8 ? 'var(--green)' : a.score >= 6 ? 'var(--accent)' : a.score >= 4 ? 'var(--amber)' : 'var(--red)';
+          return `<span style="font-family:'DM Mono',monospace;font-size:12px;color:${c}">Attempt ${i+1}: ${a.score}/10</span>`;
+        }).join('<span style="color:var(--muted);margin:0 4px">→</span>')}
+        <span style="color:var(--muted);font-size:12px;font-family:'DM Mono',monospace">→ try again</span>
+      </div>`
+    : '';
 
   const qArea = document.getElementById('question-area');
   qArea.innerHTML = `
@@ -366,9 +382,10 @@ function askNextQuestion() {
       </div>
       <div class="question-text">${state.currentQuestion}</div>
     </div>
+    ${attemptsHtml}
     <div class="answer-area">
       <div class="input-row">
-        <textarea id="answer-input" placeholder="Type your answer, or hit the mic to speak..." rows="7" oninput="updateCharCount()"></textarea>
+        <textarea id="answer-input" placeholder="${placeholder}" rows="7" oninput="updateCharCount()"></textarea>
         <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:4px">
           <button class="mic-btn" id="mic-btn" onclick="toggleRecording()" title="Click to speak your answer">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -524,15 +541,33 @@ function renderFeedback(f, answer) {
   const fillColor = score >= 8 ? 'var(--green)' : score >= 6 ? 'var(--accent)' : score >= 4 ? 'var(--amber)' : 'var(--red)';
   const verdictClass = {Strong:'strong', Good:'good', Fair:'fair', Weak:'weak'}[f.verdict] || 'fair';
 
-  state.scores.push(score);
-  state.usedQuestions.push({ q: state.currentQuestion, score });
+  state.currentAttempts.push({ score, answer });
+  const attemptNum = state.currentAttempts.length;
+
+  if (attemptNum === 1) {
+    state.scores.push(score);
+    state.usedQuestions.push({ q: state.currentQuestion, score });
+  } else {
+    state.scores[state.scores.length - 1] = score;
+  }
   updateSessionBar();
-  addToHistory(state.currentQuestion, score);
+  addToHistory(state.currentQuestion, score, attemptNum);
+
+  const attemptStripHtml = attemptNum > 1
+    ? `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:0 1.5rem 0.75rem">
+        ${state.currentAttempts.map((a, i) => {
+          const c = a.score >= 8 ? 'var(--green)' : a.score >= 6 ? 'var(--accent)' : a.score >= 4 ? 'var(--amber)' : 'var(--red)';
+          const bold = i === attemptNum - 1 ? 'font-weight:600' : 'opacity:0.7';
+          return `<span style="font-family:'DM Mono',monospace;font-size:12px;color:${c};${bold}">Attempt ${i+1}: ${a.score}/10</span>`;
+        }).join('<span style="color:var(--muted);margin:0 4px">→</span>')}
+      </div>`
+    : '';
 
   document.getElementById('feedback-area').innerHTML = `
     <div class="feedback-card">
+      ${attemptStripHtml}
       <div class="feedback-header">
-        <span class="label">Feedback</span>
+        <span class="label">Feedback${attemptNum > 1 ? ` · Attempt ${attemptNum}` : ''}</span>
         <div class="score-display">
           <span class="score-num">${score}/10</span>
           <div class="score-bar"><div class="score-fill" style="width:${pct}%;background:${fillColor}"></div></div>
@@ -572,14 +607,30 @@ function updateSessionBar() {
   document.getElementById('avg-stars').textContent = stars + ' ' + avg.toFixed(1);
 }
 
-function addToHistory(q, score) {
+function addToHistory(q, score, attemptNum) {
   document.getElementById('history-area').classList.remove('hidden');
   const list = document.getElementById('history-list');
-  const item = document.createElement('div');
-  item.className = 'history-item';
+  const itemId = `hist-q${state.questionCount}`;
   const short = q.length > 80 ? q.slice(0, 77) + '...' : q;
-  item.innerHTML = `<div class="hi-q">${short}</div><div class="hi-score">${score}/10</div>`;
-  list.appendChild(item);
+  const attemptsLabel = attemptNum > 1 ? ` <span style="font-size:10px;color:var(--muted)">(×${attemptNum})</span>` : '';
+  let item = document.getElementById(itemId);
+  if (item) {
+    item.innerHTML = `<div class="hi-q">${short}</div><div class="hi-score">${score}/10${attemptsLabel}</div>`;
+  } else {
+    item = document.createElement('div');
+    item.className = 'history-item';
+    item.id = itemId;
+    item.innerHTML = `<div class="hi-q">${short}</div><div class="hi-score">${score}/10</div>`;
+    list.appendChild(item);
+  }
+}
+
+function retryQuestion() {
+  stopRecording();
+  document.getElementById('next-row').classList.add('hidden');
+  document.getElementById('feedback-area').innerHTML = '';
+  renderQuestionInput('Refine your answer...');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function nextQuestion() {
@@ -621,7 +672,7 @@ function showEndSummary() {
 }
 
 function resetSession() {
-  state = { category: state.category, questions: [], usedQuestions: [], currentQuestion: null, questionCount: 0, scores: [], awaitingAnswer: false };
+  state = { category: state.category, questions: [], usedQuestions: [], currentQuestion: null, questionCount: 0, scores: [], awaitingAnswer: false, currentAttempts: [] };
   document.getElementById('session-panel').classList.add('hidden');
   document.getElementById('start-panel').classList.remove('hidden');
   document.getElementById('history-area').classList.add('hidden');
