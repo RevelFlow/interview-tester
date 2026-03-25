@@ -517,52 +517,58 @@ function toggleRecording() {
 }
 
 function startRecording() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  recognition = new SR();
-  recognition.continuous = true;
-  recognition.interimResults = true;
-  recognition.lang = 'en-GB';
+  // Stop any TTS playing to prevent mic feedback
+  stopSpeaking();
 
-  const btn = document.getElementById('mic-btn');
-  const status = document.getElementById('voice-status');
   const textarea = document.getElementById('answer-input');
-  let existingText = textarea.value;
-  if (existingText && !existingText.endsWith(' ')) existingText += ' ';
+  let baseText = textarea.value;
+  if (baseText && !baseText.endsWith(' ')) baseText += ' ';
 
-  recognition.onstart = () => {
-    isRecording = true;
-    btn.classList.add('recording');
-    status.textContent = 'listening...';
-    status.classList.add('active');
-  };
+  function createSession() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SR();
+    recognition.continuous = false; // more reliable on mobile
+    recognition.interimResults = true;
+    recognition.lang = 'en-GB';
 
-  recognition.onresult = (e) => {
-    let interim = '';
-    let final = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
-      else interim += e.results[i][0].transcript;
-    }
-    if (final) existingText += final;
-    textarea.value = existingText + interim;
-    updateCharCount();
-  };
+    recognition.onstart = () => {
+      isRecording = true;
+      const btn = document.getElementById('mic-btn');
+      const status = document.getElementById('voice-status');
+      if (btn) btn.classList.add('recording');
+      if (status) { status.textContent = 'listening...'; status.classList.add('active'); }
+    };
 
-  recognition.onerror = (e) => {
-    stopRecording();
-    if (status) { status.textContent = e.error === 'not-allowed' ? 'no access' : 'error'; }
-  };
+    recognition.onresult = (e) => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) baseText += e.results[i][0].transcript + ' ';
+        else interim += e.results[i][0].transcript;
+      }
+      const ta = document.getElementById('answer-input');
+      if (ta) { ta.value = baseText + interim; updateCharCount(); }
+    };
 
-  recognition.onend = () => {
-    if (isRecording) recognition.start();
-  };
+    recognition.onerror = (e) => {
+      if (e.error === 'no-speech') return; // harmless timeout, will restart via onend
+      stopRecording();
+      const status = document.getElementById('voice-status');
+      if (status) status.textContent = e.error === 'not-allowed' ? 'no access' : 'error';
+    };
 
-  recognition.start();
+    recognition.onend = () => {
+      if (isRecording) setTimeout(createSession, 50);
+    };
+
+    try { recognition.start(); } catch(err) { console.warn('recognition start failed', err); }
+  }
+
+  createSession();
 }
 
 function stopRecording() {
   isRecording = false;
-  if (recognition) { recognition.onend = null; recognition.stop(); recognition = null; }
+  if (recognition) { recognition.onend = null; recognition.onerror = null; recognition.stop(); recognition = null; }
   const btn = document.getElementById('mic-btn');
   const status = document.getElementById('voice-status');
   if (btn) btn.classList.remove('recording');
