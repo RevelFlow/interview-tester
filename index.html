@@ -331,8 +331,11 @@ When giving feedback, structure it as JSON with these exact fields:
   "what_worked": "<2-3 sentences on genuine strengths of the answer>",
   "what_missed": "<specific things that were absent, vague, or weak - be direct, don't sugarcoat>",
   "better_version": "<a concrete suggestion: either a specific example Benjy should have used, or 2-3 sentences showing how to improve the structure/content>",
-  "tip": "<one sharp, memorable tactical tip>"
+  "tip": "<one sharp, memorable tactical tip>",
+  "ideal_response": ["<point 1 — the first thing to cover in order>", "<point 2>", "<point 3>", "...up to 6 points max"]
 }
+
+For "ideal_response": provide an ordered list of 4–6 bullet points that describe exactly what a strong answer to this question should cover, in the sequence it should be delivered. These should be concrete and specific to the question, not generic advice. Think of it as a blueprint Benjy can use to structure his next attempt.
 
 IMPORTANT CONTEXT: This is an INFORMAL first interview — more of a conversation than a formal panel. Herd's culture is relaxed and human. Answers do not need rigid STAR structure; what matters is that the content is clear, grounded in real experience, and shows genuine self-awareness. Conversational, natural answers are fine — even preferable. Do NOT penalise for informal tone or loose structure unless it genuinely undermines the answer.
 
@@ -623,7 +626,7 @@ Now provide your feedback as a JSON object only — no other text, no markdown f
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: document.getElementById('model-select').value,
-        max_tokens: 1000,
+        max_tokens: 1500,
         system: CONTEXT,
         messages: [{ role: 'user', content: prompt }]
       })
@@ -707,6 +710,15 @@ function renderFeedback(f, answer) {
           <div class="fs-label" style="color:var(--muted)">⚡ Sharp tip</div>
           <div class="fs-content" style="font-style:italic;color:var(--muted)">${f.tip}</div>
         </div>
+        ${f.ideal_response && f.ideal_response.length ? `
+        <div class="feedback-section" style="border-top:1px solid var(--border);padding-top:1.25rem;margin-top:0.25rem">
+          <div class="fs-label" style="color:#6b7fd4">◎ Ideal response structure</div>
+          <div class="fs-content">
+            <ol style="padding-left:1.4rem;margin:0">
+              ${f.ideal_response.map(pt => `<li style="margin-bottom:0.4rem">${pt}</li>`).join('')}
+            </ol>
+          </div>
+        </div>` : ''}
       </div>
     </div>`;
 
