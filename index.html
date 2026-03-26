@@ -108,7 +108,9 @@
 
   .next-row { display: flex; gap: 10px; flex-wrap: wrap; }
   .history { margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
-  .history-title { font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 1rem; }
+  .history-title { font-family: 'DM Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 1rem; display:flex; align-items:center; justify-content:space-between; }
+  .download-btn { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border2); background: var(--surface); color: var(--muted); cursor: pointer; transition: all 0.15s; }
+  .download-btn:hover { border-color: var(--accent); color: var(--accent); }
   .history-item { display: flex; align-items: flex-start; gap: 12px; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
   .history-item:last-child { border-bottom: none; }
   .hi-q { font-size: 14px; color: var(--muted); flex: 1; line-height: 1.5; }
@@ -276,7 +278,10 @@
       <button class="btn btn-ghost btn-sm" onclick="endSession()">End session</button>
     </div>
     <div id="history-area" class="hidden history">
-      <div class="history-title">This session</div>
+      <div class="history-title">
+        <span>This session</span>
+        <button class="download-btn" id="download-log-btn" onclick="downloadCSV()">↓ Download log</button>
+      </div>
       <div id="history-list"></div>
     </div>
   </div>
@@ -436,6 +441,8 @@ function saveApiKey(val) {
   else localStorage.removeItem('anthropicApiKey');
   document.getElementById('api-key-status').classList.toggle('set', !!key);
 }
+
+(function initLogButton() { updateLogButton(); })();
 
 (function initApiKey() {
   const key = localStorage.getItem('anthropicApiKey') || '';
@@ -694,6 +701,7 @@ function renderFeedback(f, answer) {
 
   state.currentAttempts.push({ score, answer });
   const attemptNum = state.currentAttempts.length;
+  logEntry(state.currentQuestion, answer, f, attemptNum);
 
   if (attemptNum === 1) {
     state.scores.push(score);
@@ -775,6 +783,45 @@ function updateSessionBar() {
   document.getElementById('avg-stars').textContent = stars + ' ' + avg.toFixed(1);
 }
 
+// ── Session log ────────────────────────────────────────
+function logEntry(question, answer, f, attempt) {
+  const log = JSON.parse(localStorage.getItem('interviewLog') || '[]');
+  log.push({
+    date: new Date().toLocaleString('en-GB'),
+    question,
+    attempt,
+    answer,
+    score: f.score,
+    verdict: f.verdict,
+    what_worked: f.what_worked,
+    what_missed: f.what_missed,
+    better_version: f.better_version,
+    tip: f.tip,
+    ideal_response: (f.ideal_response || []).join(' | ')
+  });
+  localStorage.setItem('interviewLog', JSON.stringify(log));
+  updateLogButton();
+}
+
+function updateLogButton() {
+  const count = JSON.parse(localStorage.getItem('interviewLog') || '[]').length;
+  const btn = document.getElementById('download-log-btn');
+  if (btn) btn.textContent = `↓ Download log (${count})`;
+}
+
+function downloadCSV() {
+  const log = JSON.parse(localStorage.getItem('interviewLog') || '[]');
+  if (!log.length) { alert('No entries logged yet.'); return; }
+  const headers = ['Date','Question','Attempt','Your Answer','Score','Verdict','What Worked','What Missed','How to Improve','Tip','Ideal Structure'];
+  const esc = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+  const rows = log.map(e => [e.date, e.question, e.attempt, e.answer, e.score, e.verdict, e.what_worked, e.what_missed, e.better_version, e.tip, e.ideal_response].map(esc).join(','));
+  const csv = [headers.join(','), ...rows].join('\r\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = `interview-log-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
 function addToHistory(q, score, attemptNum) {
   document.getElementById('history-area').classList.remove('hidden');
   const list = document.getElementById('history-list');
@@ -831,8 +878,9 @@ function showEndSummary() {
       <div class="question-text" style="font-size:1rem;color:var(--muted)">
         ${state.scores.length} question${state.scores.length !== 1 ? 's' : ''} answered · Average score: <strong style="color:var(--accent)">${avg.toFixed(1)}/10</strong>
       </div>
-      <div style="margin-top:1.5rem">
+      <div style="margin-top:1.5rem;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="resetSession()">Start new session →</button>
+        <button class="btn btn-ghost btn-sm" onclick="downloadCSV()">↓ Download log</button>
       </div>
     </div>`;
   document.getElementById('feedback-area').innerHTML = '';
