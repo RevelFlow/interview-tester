@@ -604,7 +604,14 @@ function startRecording() {
     try { recognition.start(); } catch(err) { console.warn('recognition start failed', err); }
   }
 
-  createSession();
+  // Warm up audio route so OS picks the active input device (e.g. headphone mic)
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => { stream.getTracks().forEach(t => t.stop()); createSession(); })
+      .catch(() => createSession());
+  } else {
+    createSession();
+  }
 }
 
 function stopRecording() {
