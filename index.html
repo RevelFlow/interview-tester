@@ -543,6 +543,7 @@ function renderQuestionInput(placeholder) {
 
 let recognition = null;
 let isRecording = false;
+let audioStream = null; // held open to keep headphone mic active
 
 function toggleRecording() {
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -604,10 +605,11 @@ function startRecording() {
     try { recognition.start(); } catch(err) { console.warn('recognition start failed', err); }
   }
 
-  // Warm up audio route so OS picks the active input device (e.g. headphone mic)
+  // Hold a getUserMedia stream open for the duration of recording so iOS
+  // keeps the audio route on the headphone mic instead of reverting to built-in
   if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     navigator.mediaDevices.getUserMedia({ audio: true })
-      .then(stream => { stream.getTracks().forEach(t => t.stop()); createSession(); })
+      .then(stream => { audioStream = stream; createSession(); })
       .catch(() => createSession());
   } else {
     createSession();
@@ -617,6 +619,7 @@ function startRecording() {
 function stopRecording() {
   isRecording = false;
   if (recognition) { recognition.onend = null; recognition.onerror = null; recognition.stop(); recognition = null; }
+  if (audioStream) { audioStream.getTracks().forEach(t => t.stop()); audioStream = null; }
   const btn = document.getElementById('mic-btn');
   const status = document.getElementById('voice-status');
   if (btn) btn.classList.remove('recording');
